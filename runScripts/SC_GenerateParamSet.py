@@ -163,11 +163,11 @@ def genParSet(inputData):
       parDF[currRow.KeyName] = parValue 
 
    # create new test directory
-   os.system('mkdir ' + testDir)
-   os.system('mkdir ' + testDir + '/FullRunData')
-   os.system('mkdir ' + testDir + '/SingleLineOutput')
-   os.system('mkdir ' + testDir + '/RunTimeData')
-   os.system('mkdir ' + testDir + '/Errors')
+   os.system('mkdir -p ' + testDir)
+   os.system('mkdir -p ' + testDir + '/FullRunData')
+   os.system('mkdir -p ' + testDir + '/SingleLineOutput')
+   os.system('mkdir -p ' + testDir + '/RunTimeData')
+   os.system('mkdir -p ' + testDir + '/Errors')
 
    # check if we need CLM files, copy if necessary
    if parDF['Solver.LSM'].iloc[0] == 'CLM':
@@ -195,15 +195,14 @@ def genParSet(inputData):
          outfn = testDir + '/ParameterSets_AutoGenPY_' + str(nf) + '.csv'
          parDF_sub.to_csv(outfn,index=False)
 
-def main():
-   import sys
-
+def main(args):
    keyNames = ['totaln','parFN','runFolder','nfold','randomseed']
-   keyValues = [int(sys.argv[1]),sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5]]
+   keyValues = [int(args[0]),args[1],args[2],args[3],args[4]]
 
-   genParSet(zip(keyNames,keyValues))
+   genParSet(dict(zip(keyNames,keyValues)))
 
 if __name__ == "__main__":
 
-    main() # main will take in command line input for genParSet parameters
+    import sys
+    main(sys.argv[1:]) # main will take in command line input for genParSet parameters
 

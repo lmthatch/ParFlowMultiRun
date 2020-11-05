@@ -1,0 +1,5 @@
+pandas
+parflowio
+pytest
+scipy
+git+git://github.com/hoangtv1899/pfio

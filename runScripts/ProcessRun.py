@@ -11,7 +11,7 @@ import pfio #Hoang's Parflow Read/Write Module
 import time
 import datetime
 
-from FitRecCurve import *
+from .FitRecCurve import *
 
 def pullTimeSeries(runLen,nz,nclm=0,pullVars=[('sat','test.out.satur'),('press','test.out.press')]):
     ''' 

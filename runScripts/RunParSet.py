@@ -12,7 +12,7 @@ import pfio #Hoang's Parflow Read/Write Module
 import time
 import datetime
 
-from ProcessRun import *
+from .ProcessRun import *
 
 ############# Functions ##############
 # pfidbGen: pfidb generator
@@ -114,7 +114,7 @@ def createPumpFile(pumpVRate, pumpDepth_min, pumpDepth_max, dz, dx, nz):
     # convert text to pfb
     os.system('tclsh /glade/scratch/lmthatch/SCTests/runScripts/ConvertPFB2TXT 0 test_pump.txt test_pump.pfb')
 
-def createRunDir(n): #(clmDir,currTestDir) input parameters ignored for now, assuming we're in the current directory and the clm directory has been copied into this folder
+def createRunDir(dataFolder, n): #(clmDir,currTestDir) input parameters ignored for now, assuming we're in the current directory and the clm directory has been copied into this folder
     '''
     create folder for parflow run 
     
@@ -127,9 +127,9 @@ def createRunDir(n): #(clmDir,currTestDir) input parameters ignored for now, ass
 
     # create run directory
     runDir = 'test' + str(n)
-    os.system('mkdir ' + runDir)
+    os.system('mkdir -p ' + os.path.join(dataFolder, runDir))
 
-    return runDir
+    return os.path.join(dataFolder, runDir)
 
 def getInputRow(n,paramFile): # gets the input rows needed.
     '''
@@ -197,11 +197,12 @@ def runSet(parLine, parameterFN, parDict):
 
     print('parameter set complete: ' + str(parLine))
 
-def runSingleFolder(runset,parDict): 
+def runSingleFolder(dataFolder,runset,parDict):
     '''
     Runs a full set of parameter lines all in sequences within a single run folder
 
     Args:
+        dataFolder: Folder where data files (.csv) are located
         runset: set number of parameter files to run
         parDict: Dictionary w/ ParflowMultiRun Parameters, including processing requirements
     
@@ -213,17 +214,17 @@ def runSingleFolder(runset,parDict):
     print('Running Folder ' + str(runset))
     
     # create run directory
-    newRunDir = createRunDir(runset)
+    newRunDir = createRunDir(dataFolder,runset)
 
     # get all run parameters
-    parameterFN = "ParameterSets_AutoGenPY_" + str(runset) + ".csv"
+    parameterFN = os.path.join(dataFolder, "ParameterSets_AutoGenPY_" + str(runset) + ".csv")
     allPar = getAllInputRows(parameterFN)
     nsets = len(allPar.index) # number of parameter sets in file
 
     # copy CLM files as needed
     # copy over clm driver files
     print()
-    if parDict['clmDir'] != '':
+    if parDict.get('clmDir', '') != '':
         os.system("cp ../" + parDict['clmDir'] + "/drv_clmin.dat " + newRunDir)
         os.system("cp ../" + parDict['clmDir'] + "/drv_vegm.dat " + newRunDir)
         os.system("cp ../" + parDict['clmDir'] + "/drv_vegp.dat " + newRunDir)
@@ -236,7 +237,7 @@ def runSingleFolder(runset,parDict):
 
     # set parflow run command
     # check if parflow director is set
-    if parDict['parfDir'] != '':
+    if parDict.get('parfDir', '') != '':
         parfcommand = parDict + ' test  > parflow.test.log'
     else:
         parfcommand = "$PARFLOW_DIR/bin/parflow test  > parflow.test.log"
@@ -301,15 +302,16 @@ def runSingleFolder(runset,parDict):
     os.chdir('../')
     #os.system('rm -r ' + newRunDir)
 
-def main():
-    runset = int(sys.argv[1])
+def main(args):
+    dataFolder = args[0]
+    runset = int(args[1])
 
     # default key values
     keys=['saveAllPFData','saveTotStoSL','saveRecCurve_Total', 'saveRecCurve_Layers', 'saveCLMSL', 'saveStoStats']
     defaultVals = [True,True,True,True,True,True]
     defaultDict = dict(zip(keys,defaultVals))
 
-    runSingleFolder(runset,defaultDict)
+    runSingleFolder(dataFolder,runset,defaultDict)
 
     # old def main -> When file creation not restricted (no go on Cheyenne)
     # runLine = int(sys.argv[1],"ParameterSets_AutoGenPY.csv")
@@ -317,5 +319,5 @@ def main():
 
 if __name__ == "__main__":
 
-    main() # main is passed the line in the parameter file that you want to pull
+    main(sys.argv[1:]) # main is passed the line in the parameter file that you want to pull
 

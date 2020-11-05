@@ -3,7 +3,7 @@ import setuptools
 with open('README.md','r') as fh:
     long_description = fh.head()
 
-setuptool.setup(
+setuptools.setup(
     name='pfmultirun-pkg-lmthatch',
     version='0.0.1',
     author='Lauren Thatch',

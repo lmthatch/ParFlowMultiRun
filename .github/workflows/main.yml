@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, develop, ci ]
+  pull_request:
+    branches: [ master, develop, ci ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.7]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: false
+
+      - name: Set Environment variables for installation
+        run: |
+          echo "HYPRE_DIR=/opt/hypre" >> $GITHUB_ENV
+          echo "PARFLOW_DIR=/opt/parflow" >> $GITHUB_ENV
+
+      - name: Install Ubuntu dependencies
+        run: |
+          sudo apt-get -y install gcc build-essential cmake g++ gdc gfortran tcl-dev tk-dev git
+          sudo apt-get -y install openmpi-bin libopenmpi-dev
+
+      - name: Install HYPRE
+        run: |
+          wget https://computing.llnl.gov/projects/hypre-scalable-linear-solvers-multigrid-methods/download/hypre-2.11.2.tar.gz -O hypre.tar.gz
+          tar xvzf hypre.tar.gz
+          (cd hypre-2.11.2/src && ./configure --prefix=${HYPRE_DIR} && make install)
+
+      - name: Install Parflow
+        run: |
+          git clone -b master --single-branch https://github.com/parflow/parflow.git parflow
+          (cd parflow && git checkout 974c7bb && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PARFLOW_DIR} -DHYPRE_ROOT=${HYPRE_DIR} -DPARFLOW_AMPS_LAYER=mpi1 -DPARFLOW_AMPS_SEQUENTIAL_IO=true -DPARFLOW_ENABLE_TIMING=true -DPARFLOW_HAVE_CLM=ON && make install)
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          PYTHONPATH=. pytest tests
