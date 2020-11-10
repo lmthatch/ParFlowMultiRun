@@ -101,18 +101,24 @@ def fitRecCurve(stoDat, outFile):
     '''
 
     # subset the 'rain-rec period' from the full storage data
-    recSto = subsetRec(stoDat.squeeze()).to_numpy() # and convert to numpy array
+    #recSto = stoDat.to_numpy() # removing the recession subset, can now be used for either
+    #recSto = subsetRec(stoDat.squeeze()).to_numpy() # and convert to numpy array
+    recSto = stoDat # will fix this later...
 
-    # get min and max storage
-    maxSto = stoDat.max()
-    minSto = stoDat.min()
+    # determine whether to pass min or max first to the fit functions
+    if np.argmax(stoDat) > np.argmin(stoDat): # aka storage is increasing
+        QoGuess = stoDat.min()
+        QfGuess = stoDat.max()
+    else:
+        QoGuess = stoDat.max()
+        QfGuess = stoDat.min()        
 
     # get model optimal parameters
     recLen = len(recSto)
     xvalues = np.arange(0,recLen)
-    popt_mals, stats_mals = fitModel(exponentialMshift,xvalues,recSto, [maxSto,minSto, 0.047])
-    popt_boss, stats_boss = fitModel(boussinesqshift,xvalues,recSto, [maxSto,minSto, 0.036])
-    popt_cous, stats_cous = fitModel(coutagneshift, xvalues, recSto, [maxSto,minSto,0.045, 1.012])
+    popt_mals, stats_mals = fitModel(exponentialMshift,xvalues,recSto, [QoGuess,QfGuess, 0.047])
+    popt_boss, stats_boss = fitModel(boussinesqshift,xvalues,recSto, [QoGuess,QfGuess, 0.036])
+    popt_cous, stats_cous = fitModel(coutagneshift, xvalues, recSto, [QoGuess,QfGuess, 0.045, 1.012])
 
     # merge data together to write out
     mergeStats = np.concatenate([popt_mals,popt_boss,popt_cous,stats_mals,stats_boss, stats_cous])

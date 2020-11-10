@@ -50,6 +50,7 @@ def genParSet(inputData):
    
    # loop through each of the variables and create a set (size n) of random values
    for var in varNames: 
+      print(var)
       varIdx = varVars[varVars['SCValue']==var]
       if varIdx['inputType'].iat[0] =='double': 
          varmin = int(float(varIdx['MinRange'].iat[0])*1000*n)

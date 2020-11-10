@@ -210,41 +210,56 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         # calculate each layer's 'centroid' depth
         layCent = np.arange(0,nz) * dz + dz/2
 
-        # top 1m
+        ## top 1m
         layNums = np.where(layCent > 9)[0] + 1 #layer numbers are not zero-indexed
         layNames = ['sto_' + str(l) for l in layNums]
-        laySto = allData[layNames].mean(axis=1)
-        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1m_run' + str(n) + '.csv'
-        fitRecCurve(laySto, fileOut)
+        laySto = allData[layNames].mean(axis=1).to_numpy()
+        # rec1
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1m_Rec1_run' + str(n) + '.csv'
+        fitRecCurve(laySto[17:90], fileOut)
+        # rec2
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1m_Rec2_run' + str(n) + '.csv'
+        fitRecCurve(laySto[95:168], fileOut)
+        # rec3
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1m_Rec3_run' + str(n) + '.csv'
+        fitRecCurve(laySto[173:246], fileOut)
 
         # top 2m
         layNums = np.where(layCent > 8)[0] +1 
         layNames = ['sto_' + str(l) for l in layNums]
-        laySto = allData[layNames].mean(axis=1)
-        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2m_run' + str(n) + '.csv'
-        fitRecCurve(laySto, fileOut)
+        laySto = allData[layNames].mean(axis=1).to_numpy()
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2m_Rec1_run' + str(n) + '.csv'
+        fitRecCurve(laySto[17:90], fileOut)
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2m_Rec2_run' + str(n) + '.csv'
+        fitRecCurve(laySto[95:168], fileOut)
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2m_Rec3_run' + str(n) + '.csv'
+        fitRecCurve(laySto[173:246], fileOut)
 
         # 1-2m
         layNums = np.where((layCent < 9) & (layCent > 8))[0] + 1
         layNames = ['sto_' + str(l) for l in layNums]
-        laySto = allData[layNames].mean(axis=1)
-        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1-2m_run' + str(n) + '.csv'
-        fitRecCurve(laySto, fileOut)
+        laySto = allData[layNames].mean(axis=1).to_numpy()
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1-2m_Rec1_run' + str(n) + '.csv'
+        fitRecCurve(laySto[17:90], fileOut)
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1-2m_Rec2_run' + str(n) + '.csv'
+        fitRecCurve(laySto[95:168], fileOut)
+        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_1-2m_Rec3_run' + str(n) + '.csv'
+        fitRecCurve(laySto[173:246], fileOut)
 
-        # top 2m
-        layNums = np.where(layCent < 8)[0] +1 
-        layNames = ['sto_' + str(l) for l in layNums]
-        laySto = allData[layNames].mean(axis=1)
-        fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2-10m_run' + str(n) + '.csv'
-        fitRecCurve(laySto, fileOut)
+        # bottom 8m
+        #layNums = np.where(layCent < 8)[0] +1 
+        #layNames = ['sto_' + str(l) for l in layNums]
+        #laySto = allData[layNames].mean(axis=1)
+        #fileOut = '../SingleLineOutput/SL_StoRecCurveFit_2-10m_run' + str(n) + '.csv'
+        #fitRecCurve(laySto, fileOut)
 
         # top 0.1 m
-        if dz <= 0.1:
-            layNums = np.where(layCent < 9.9)[0] + 1
-            layNames = ['sto_' + str(l) for l in layNums]
-            laySto = allData[layNames].mean(axis=1)
-            fileOut = '../SingleLineOutput/SL_StoRecCurveFit_01m_run' + str(n) + '.csv'
-            fitRecCurve(laySto, fileOut)
+        #if dz <= 0.1:
+        #    layNums = np.where(layCent < 9.9)[0] + 1
+        #    layNames = ['sto_' + str(l) for l in layNums]
+        #    laySto = allData[layNames].mean(axis=1)
+        #    fileOut = '../SingleLineOutput/SL_StoRecCurveFit_01m_run' + str(n) + '.csv'
+        #    fitRecCurve(laySto, fileOut)
 
     # calculate/save all CLM single line data (if applicable)
     if parDict['saveCLMSL']:
