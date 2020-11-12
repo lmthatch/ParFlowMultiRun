@@ -224,9 +224,9 @@ def runSingleFolder(runset,parDict):
     # copy over clm driver files
     print()
     if parDict['clmDir'] != '':
-        os.system("cp ../" + parDict['clmDir'] + "/drv_clmin.dat " + newRunDir)
-        os.system("cp ../" + parDict['clmDir'] + "/drv_vegm.dat " + newRunDir)
-        os.system("cp ../" + parDict['clmDir'] + "/drv_vegp.dat " + newRunDir)
+        os.system("cp " + parDict['clmDir'] + "/drv_clmin.dat " + newRunDir)
+        os.system("cp " + parDict['clmDir'] + "/drv_vegm.dat " + newRunDir)
+        os.system("cp " + parDict['clmDir'] + "/drv_vegp.dat " + newRunDir)
 
     # move into new run folder
     os.chdir(newRunDir)

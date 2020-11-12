@@ -14,7 +14,11 @@ def readInputFile():
     '''
 
     fn = 'SCInput.txt' # input file (this file name should not change and always be in folder where ParFlowMultiRun is called)
-    keys=['runFolder','inputDir','clmDir','parFN','irrFN','parfDir','totaln','nfold','randomseed','saveAllPFData','saveTotStoSL','saveRecCurve_Total', 'saveRecCurve_Layers', 'saveCLMSL', 'saveStoStats']
+    keys=['runFolder','inputDir','clmDir','parFN',
+        'irrFN','parfDir','totaln','nfold','randomseed',
+        'saveAllPFData','saveTotStoSL','saveRecCurve_Total', 
+        'saveRecCurve_Layers', 'saveCLMSL', 'saveStoStats',
+        'saveCLMAll','saveSM']
     values = []
 
 

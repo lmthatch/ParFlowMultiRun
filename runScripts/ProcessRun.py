@@ -86,7 +86,7 @@ def pullSingleVar(prefix,runLen,colnames,post='pfb'):
         
         # get hourly data
         fin = prefix + ".{:05d}.".format(k) + post # set file name
-        print('pulling: ',fin)
+        #print('pulling: ',fin)
         
         incompleteRun = False
         try:
@@ -261,6 +261,15 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         #    fileOut = '../SingleLineOutput/SL_StoRecCurveFit_01m_run' + str(n) + '.csv'
         #    fitRecCurve(laySto, fileOut)
 
+    # save all CLM hourly data
+    if parDict['saveCLMAll']: 
+        clmVars = ['qflx_evap_tot','qflx_evap_grnd',
+            'qflx_evap_soi','qflx_evap_veg','qflx_trans_veg',
+            'qflx_infl','qflx_qirr','swe_out','t_grnd'] # ignoring soil temperatures for now
+        fileOut = '../FullRunData/FullCLMData_run' + str(n) + ".csv"
+        allData[clmVars].to_csv(fileOut,index=False)
+
+
     # calculate/save all CLM single line data (if applicable)
     if parDict['saveCLMSL']:
 
@@ -320,6 +329,28 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         allStoDataDF.columns=allCols # update Pandas DataFrame w/ column names
         fileOut = '../SingleLineOutput/SL_Sto_run' + str(n) + ".csv"
         allStoDataDF.to_csv(fileOut,index=False)
-    
+
+    if parDict['saveSM']:
+
+        por = rpars['Geom.domain.Porosity.Value']
+
+        # calculate each layer's 'centroid' depth
+        layCent = np.arange(0,nz) * dz + dz/2
+
+        # top 1m
+        layNums = np.where(layCent > 9)[0] + 1 #layer numbers are not zero-indexed
+        layNames = ['sat_' + str(l) for l in layNums]
+        laySM = allData[layNames].mean(axis=1) * por
+        fileOut = '../SingleLineOutput/SL_SM_1m_run' + str(n) + '.csv'
+        laySM.to_csv(fileOut,index=False)
+
+        # top 2m
+        layNums = np.where(layCent > 8)[0] + 1 
+        layNames = ['sat_' + str(l) for l in layNums]
+        laySM = allData[layNames].mean(axis=1) * por
+        fileOut = '../SingleLineOutput/SL_SM_2m_run' + str(n) + '.csv'
+        laySM.to_csv(fileOut,index=False)
+
+
 
 
