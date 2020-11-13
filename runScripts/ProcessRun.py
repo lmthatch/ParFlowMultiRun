@@ -352,15 +352,10 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         laySM.to_csv(fileOut,index=False)
     
     if parDict['processFlow']:
-        topPress = allData['press_' + str(nz)]
-        mannings = rpars['Mannings.Geom.domain.Value']
-        slope = rpars['TopoSlopesX.Geom.domain.Value']
-        dx = rpars['ComputationalGrid.DX']
-        q = [(p**(5/3))*(abs(slope)**(1/2))*dx/mannings for p in topPress]
-        fileOut = '../SingleLineOutput/Q_run' + str(n) + '.csv'
-        q = pd.Series(q)
-        q.to_csv(fileOut,index=False)
-
-
-
-
+        fileOut = '../SingleLineOutput/TopPress_run' + str(n) + '.csv'
+        allData['press_' + str(nz)].to_csv(fileOut,index=False)
+        #mannings = rpars['Mannings.Geom.domain.Value']
+        #slope = rpars['TopoSlopesX.Geom.domain.Value']
+        #dx = rpars['ComputationalGrid.DX']
+        #q = [(p**(5/3))*(abs(slope)**(1/2))*dx/mannings for p in topPress]
+        #q = pd.Series(q)
