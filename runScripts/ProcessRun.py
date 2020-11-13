@@ -350,6 +350,15 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         laySM = allData[layNames].mean(axis=1) * por
         fileOut = '../SingleLineOutput/SL_SM_2m_run' + str(n) + '.csv'
         laySM.to_csv(fileOut,index=False)
+    
+    if parDict['processFlow']:
+        topPress = allData['press_' + str(nz-1)]
+        mannings = rpars['Mannings.Geom.domain.Value']
+        slope = rpars['TopoSlopesX.Geom.domain.Value']
+        dx = rpars['ComputationalGrid.DX']
+        q = [p**(5/3)*slope**(1/2)/mannings*dx for p in topPress]
+        fileOut = '../SingleLineOutput/Q_run' + str(n) + '.csv'
+        q.to_csv(fileOut,index=False)
 
 
 
