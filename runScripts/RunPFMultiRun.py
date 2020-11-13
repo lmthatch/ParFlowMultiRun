@@ -18,7 +18,7 @@ def readInputFile():
         'irrFN','parfDir','totaln','nfold','randomseed',
         'saveAllPFData','saveTotStoSL','saveRecCurve_Total', 
         'saveRecCurve_Layers', 'saveCLMSL', 'saveStoStats',
-        'saveCLMAll','saveSM']
+        'saveCLMAll','saveSM','processFlow']
     values = []
 
 
