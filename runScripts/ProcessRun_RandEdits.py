@@ -13,7 +13,7 @@ import datetime
 
 from FitRecCurve import *
 
-def pullTimeSeries(runPars,nclm=0,pullVars=[('sat','test.out.satur'),('press','test.out.press')]):
+def pullTimeSeries(runLen,nz,nclm=0,pullVars=[('sat','test.out.satur'),('press','test.out.press')]):
     ''' 
     Pulls all Parflow output data for all variables including:
         pressure
@@ -32,15 +32,6 @@ def pullTimeSeries(runPars,nclm=0,pullVars=[('sat','test.out.satur'),('press','t
     '''
 
     print('Pulling Time Series data')
-    print('Ive updated the timeseries pull')
-    # get run parameters
-    nz = runPars['ComputationalGrid.NZ']
-    nx = runPars['ComputationalGrid.NX']
-    ny = runPars['ComputationalGrid.NY']
-
-    print(f'PF Domain Size = {nx} by {ny} by {nz}')
-    runLen = runPars['TimingInfo.StopTime']
-
 
     # list of all soil layers (based on nz)
     allLayers = list(np.arange(1,nz+1)) 
@@ -60,15 +51,11 @@ def pullTimeSeries(runPars,nclm=0,pullVars=[('sat','test.out.satur'),('press','t
             varColnames.extend(['tsoil_' + str(l) for l in clmLayers]) # adds a soil temperature list
             varpost = 'C.pfb'
         else:
-            if nx > 1 or ny > 1:
-                varColnames = [var + '_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in np.arange(1,nz+1) for y in np.arange(1,ny+1) for x in np.arange(1,nx+1)]
-            else:
-                varColnames = [var + '_' + str(s) for s in np.arange(1,nz+1)]
-
+            varColnames = [var + '_' + str(l) for l in allLayers]
             varpost='pfb'
 
         # pull variable data  
-        varData = pullSingleVar(varpre,runLen,varColnames,post=varpost)
+        varData = pullSingleVar(var,varpre,runLen,varColnames,post=varpost)
 
         # merge into data frame with all variables 
         if firstVar:
@@ -77,15 +64,15 @@ def pullTimeSeries(runPars,nclm=0,pullVars=[('sat','test.out.satur'),('press','t
         else:
             allVarData = pd.concat([allVarData,varData],axis=1)
 
-
     return allVarData
 
 
-def pullSingleVar(prefix,runLen,colnames,post='pfb'):
+def pullSingleVar(var,prefix,runLen,colnames,post='pfb'):
     '''
     Pulls full time series for a single variable
 
     Args:
+        var: variable
         prefix: parflow output file prefix
         runLen: length, in hours, of parflow run (and output data) 
         colnames: column names for output data/variable
@@ -94,6 +81,7 @@ def pullSingleVar(prefix,runLen,colnames,post='pfb'):
     Returns:
         Pandas Dataframe with all variable data
     '''
+    firstFile = True
 
     # Loop through all files by 'hour' and merge
     for k in range(1,(runLen+1)):
@@ -111,61 +99,64 @@ def pullSingleVar(prefix,runLen,colnames,post='pfb'):
 
         if incompleteRun:
             break
+        
+        if firstFile:
+            if len(datINpf.shape) > 1:
+                dz,dy,dx = datINpf.shape
+                colnames = [var + '_dz' + str(z) + '_dy' + str(y) + '_dx' + str(x) for z in np.arange(dz) for y in np.arange(dy) for x in np.arange(dx)]
 
-        #datDF = pd.DataFrame(np.transpose(datINpf[:,:,0]),columns=colnames)
-        datDF = pd.DataFrame(datINpf.flatten().reshape(-1,len(datINpf.flatten())),columns=colnames) 
+            if dx <= 1:
+                colnames = [var + '_' + str(i) for i in np.arange(1,nz+1)]
  
+            firstFile = False
+
+
+        if SC: # for single column data
+            datDF = pd.DataFrame(np.transpose(datINpf[:,:,0]),columns=colnames) 
+
+        elif TV: # for tilted V data
+            # data needs to be transformed into a single line
+            datDF = pd.DataFrame(datINpf.flatten().reshape(-1,len(datINpf.flatten())),columns=colnames) 
+
+
+            
         # merge hourly data into single dataframe
         if k==1:
             datAll = datDF
-            #print(datDF)
-            #print(datDF2)
         else:
             datAll = datAll.append(datDF, ignore_index=True) 
 
     datAll = datAll.reset_index() # reset index for easier future merging
     
-    print(datAll.columns)
     return datAll
 
-def addStorage(allData,parDat):
+def addStorage(allData,nz,dz,ss,por):
     '''
     Calculates storage data for all parflow timesteps, at all layers
     Adds to Pandas DataFrame with all parflow output data
 
     Args:
         allData: all Parflow output data (Press, Saturation, and CLM if applicable)
-        #nz: number of vertical layers in the parflow model
-        #dz: vertical layer depth (currently only constant layer depths is configued)
-        #ss: specific storage
-        #por: porosity
-        parDat: parameter data
+        nz: number of vertical layers in the parflow model
+        dz: vertical layer depth (currently only constant layer depths is configued)
+        ss: specific storage
+        por: porosity
     
     Returns:
         tuple:
             Panda Dataframe: updated parflow output and storage data
             List of Storage column names (for easier access later)
     '''
-    dz = parDat['ComputationalGrid.DZ']
-    por = parDat['Geom.domain.Porosity.Value']
-    ss = parDat['Geom.domain.SpecificStorage.Value']
-    nx = parDat['ComputationalGrid.NX']
-    ny = parDat['ComputationalGrid.NY']
-    nz = parDat['ComputationalGrid.NZ']
 
-    if nx == 1 and ny == 1:
-        allLayers = [str(s) for s in np.arange(1,nz+1)] # list of all soil layers
-    else:
-        allLayers = ['dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in np.arange(1,nz+1) for y in np.arange(1,ny+1) for x in np.arange(1,nx+1)]
-    
-    #sat_colnames = ['sat_' + str(l) for l in allLayers]
-    #pres_colnames = ['press_' + str(l) for l in allLayers]
+    allLayers = list(np.arange(1,nz+1)) # list of all soil layers
+    sat_colnames = ['sat_' + str(l) for l in allLayers]
+    pres_colnames = ['press_' + str(l) for l in allLayers]
     sto_colnames = ['sto_' + str(l) for l in allLayers]
 
     # loop through each layer and calculate storage for that layer
-    for i,lay in enumerate(allLayers):
-        sat = allData['sat_' + lay]
-        pres = allData['press_' + lay]
+    for i in range(nz):
+        sat = allData[sat_colnames[i]]
+        pres = allData[pres_colnames[i]]
         sto =  pres.multiply(sat) * dz * ss + sat * por * dz
         allData[sto_colnames[i]] = sto
 
@@ -196,7 +187,6 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
 
     # evaluate which parflow output to collect (varies depending on whether CLM/LSM was used)
     if rpars['Solver.LSM'] == 'CLM':
-        LSM = True # check if clm is being used
         nclm = rpars['Solver.CLM.RootZoneNZ']
         pullFiles = [('sat','test.out.satur'),('press','test.out.press'),('clm','test.out.clm_output')]     
     else:
@@ -204,7 +194,6 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         nclm = 0
         pullFiles = [('sat','test.out.satur'),('press','test.out.press')]
 
-    print('The processing was updated')
     # pull all Parflow Run Output Data
     allData = pullTimeSeries(rpars,nclm=nclm,pullVars=pullFiles)
 
@@ -217,7 +206,10 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
     if any([parDict['saveTotStoSL'], parDict['saveRecCurve_Total'], parDict['saveRecCurve_Layers'], parDict['saveStoStats']]):
         # calculate storage
         # storage is dx*dy*dz*press*Ss*Sat + Sat*porosity
-        allData, sto_colnames = addStorage(allData,rpars)
+        dz = rpars['ComputationalGrid.DZ']
+        por = rpars['Geom.domain.Porosity.Value']
+        ss = rpars['Geom.domain.SpecificStorage.Value']
+        allData, sto_colnames = addStorage(allData,nz,dz,ss,por)
 
     # save storage single line data (if applicable)
     if parDict['saveTotStoSL']:
@@ -235,7 +227,6 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
         # save storage curves for [top 0-0.1m (if dz <= 0.1), 0-1m, 0-2m, 1m-2m, 2m-10m]
         
         # calculate each layer's 'centroid' depth
-        dz = rpars['ComputationalGrid.DZ']
         layCent = np.arange(0,nz) * dz + dz/2
 
         ## top 1m
@@ -360,106 +351,30 @@ def processDataSC(rpars,parDict): #,saveAllPFData,saveTotStoSL,saveRecCurve_Tota
 
     if parDict['saveSM']:
 
-        print('Processing Soil Moisture')
         por = rpars['Geom.domain.Porosity.Value']
-        nx = rpars['ComputationalGrid.NX']
-        ny = rpars['ComputationalGrid.NY']
-        dz = rpars['ComputationalGrid.DZ']
 
         # calculate each layer's 'centroid' depth
         layCent = np.arange(0,nz) * dz + dz/2
 
-        if nx == 1 and ny==1: #Single Column Model
-        
-            # top 1m
-            layNums = np.where(layCent > 9)[0] + 1 #layer numbers are not zero-indexed
-            layNames = ['sat_' + str(l) for l in layNums]
-            laySM = allData[layNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_SM_1m_run' + str(n) + '.csv'
-            laySM.to_csv(fileOut,index=False)
+        # top 1m
+        layNums = np.where(layCent > 9)[0] + 1 #layer numbers are not zero-indexed
+        layNames = ['sat_' + str(l) for l in layNums]
+        laySM = allData[layNames].mean(axis=1) * por
+        fileOut = '../SingleLineOutput/SL_SM_1m_run' + str(n) + '.csv'
+        laySM.to_csv(fileOut,index=False)
 
-            # top 2m
-            layNums = np.where(layCent > 8)[0] + 1 
-            layNames = ['sat_' + str(l) for l in layNums]
-            laySM = allData[layNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_SM_2m_run' + str(n) + '.csv'
-            laySM.to_csv(fileOut,index=False)
-        
-        else: # currently assuming it's a titled v model
-            xvals = np.arange(nx) + 1
-            xmid = math.ceil(nx/2)
-            xvals = xvals[xvals != xmid]
-            yvals = np.arange(ny) + 1
-
-            # top 1m
-            # all hillslope
-            vertLays = np.where(layCent > 9)[0] + 1
-            layNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xvals]
-            hillSM = allData[layNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_HillSM_1m_run' + str(n) + '.csv'
-            hillSM.to_csv(fileOut,index=False)
-
-            # upper and lower hillslope
-            xint = int(len(xvals) / 4) # divide hillslope into 4 sections
-            xunit = np.arange(xint) + 1
-            xupper = np.concatenate((xunit,xunit+xint*3+1))
-            xlower = np.concatenate((xunit + 2, xunit + xint*2 + 1))
-
-            upperLayNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xupper]
-            upperSM = allData[upperLayNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_UpperHillSM_1m_run' + str(n) + '.csv'
-            upperSM.to_csv(fileOut,index=False)
-            
-            lowerLayNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xlower]
-            lowerSM = allData[lowerLayNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_LowerHillSM_1m_run' + str(n) + '.csv'
-            lowerSM.to_csv(fileOut,index=False)
-            
-            # top 2m
-            vertLays = np.where(layCent > 8)[0] + 1
-            layNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xvals]
-            hillSM = allData[layNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_HillSM_2m_run' + str(n) + '.csv'
-            hillSM.to_csv(fileOut,index=False)
-
-            upperLayNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xupper]
-            upperSM = allData[upperLayNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_UpperHillSM_2m_run' + str(n) + '.csv'
-            upperSM.to_csv(fileOut,index=False)
-            
-            lowerLayNames = ['sat_dz' + str(int(z)) + '_dy' + str(int(y)) + '_dx' + str(int(x)) for z in vertLays for y in yvals for x in xlower]
-            lowerSM = allData[lowerLayNames].mean(axis=1) * por
-            fileOut = '../SingleLineOutput/SL_LowerHillSM_2m_run' + str(n) + '.csv'
-            lowerSM.to_csv(fileOut,index=False)  
-
+        # top 2m
+        layNums = np.where(layCent > 8)[0] + 1 
+        layNames = ['sat_' + str(l) for l in layNums]
+        laySM = allData[layNames].mean(axis=1) * por
+        fileOut = '../SingleLineOutput/SL_SM_2m_run' + str(n) + '.csv'
+        laySM.to_csv(fileOut,index=False)
+    
     if parDict['processFlow']:
-        print('Processing Flow')
         fileOut = '../SingleLineOutput/TopPress_run' + str(n) + '.csv'
-        
-        nx = rpars['ComputationalGrid.NX']
-        ny = rpars['ComputationalGrid.NY']
-        nz = rpars['ComputationalGrid.NZ']
-
-        if nx == 1 and ny == 1: 
-            layName = 'press_' + str(nz)
-        else:
-            middleY = int(math.ceil(ny/2))
-            layName = 'press_dz' + str(nz) + '_dy' + str(middleY) + '_dx' + str(int(nx))
-            print(layName)
-
-        allData[layName].to_csv(fileOut,index=False)
-        mannings = rpars['Mannings.Geom.domain.Value']
-        
-        if 'TopoSlopesY.Geom.channel.Value' in rpars.index:
-            slope = rpars['TopoSlopesY.Geom.channel.Value']
-        else:
-            slope = rpars['TopoSlopesY.Geom.domain.Value']
-
-        dx = rpars['ComputationalGrid.DX']
-
-        topPress = allData[layName]
-        topPress[topPress < 0] = 0 # remove negative pressures
-        q = [(p**(5/3))*(abs(slope)**(1/2))*dx/mannings for p in topPress]
-        fileOut = '../SingleLineOutput/OutFlow_run' + str(n) + '.csv'
-        q = pd.Series(q)
-        q.to_csv(fileOut,index=False)
+        allData['press_' + str(nz)].to_csv(fileOut,index=False)
+        #mannings = rpars['Mannings.Geom.domain.Value']
+        #slope = rpars['TopoSlopesX.Geom.domain.Value']
+        #dx = rpars['ComputationalGrid.DX']
+        #q = [(p**(5/3))*(abs(slope)**(1/2))*dx/mannings for p in topPress]
+        #q = pd.Series(q)
