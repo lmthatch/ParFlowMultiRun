@@ -254,6 +254,8 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
                 'qflx_infl','swe_out','t_grnd','qflx_qirr']
         clmColnames.extend(['tsoil_' + str(l) for l in clmLayers]) # adds a soil temperature list
         
+        clmOutFile =  '../FullRunData/allCLMDat' + '_run' + str(rpars['n']) + '.csv'
+
         # loop through all hours
         firstFile = True
         incompleteRun = False
@@ -288,13 +290,11 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
                     firstVar = False
                 else:
                     hourDF = pd.concat([hourDF,varDF],axis=1)
-            
-            # merge the hour dataframes
-            if firstFile:
-                allHoursDF = hourDF
+                    
+            # write out data
+            if firstFile: # write out header
+                hourDF.to_csv(clmOutFile, sep=',',header=True,index=False)
                 firstFile = False
             else:
-                allHoursDF = pd.concat([allHoursDF, hourDF])
-
+                hourDF.to_csv(clmOutFile, sep=',',mode='a', header=False,index=False)      
         
-        allHoursDF.to_csv('../FullRunData/allCLMDat' + '_run' + str(rpars['n']), sep=',',header=True,index=False)
