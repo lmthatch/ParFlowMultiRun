@@ -222,7 +222,7 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
         #flow/channel pressure
         topChanPress = pressDat[pressDat.shape[0]-1,pressDat.shape[1]-1,centerX]
         if topChanPress < 0:
-            topChanPress == 0
+            topChanPress = 0
         q = (topChanPress**(5/3))*(abs(slope)**(1/2))*dx/mannings
         with open(outPre + 'Outflow' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             f.write(str(q))
@@ -231,23 +231,18 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
         # water table depth transects
         with open(outPre + 'WTD500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             np.savetxt(f,wtd500,delimiter=',')
-            f.write('\n')
 
         with open(outPre + 'WTD1500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             np.savetxt(f,wtd1500,delimiter=',')
-            f.write('\n')
 
         with open(outPre + 'WTD2500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             np.savetxt(f,wtd2500,delimiter=',')
-            f.write('\n')
 
         with open(outPre + 'WTD3500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             np.savetxt(f,wtd3500,delimiter=',')
-            f.write('\n')
 
         with open(outPre + 'WTD4500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             np.savetxt(f,wtd4500,delimiter=',')
-            f.write('\n')
 
     # add clm processing
     # if needed...
