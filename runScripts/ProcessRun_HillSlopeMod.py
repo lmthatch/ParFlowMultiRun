@@ -111,9 +111,10 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
     ypoints = np.arange(dy/2,ny*dy,dy)
     #zelev = np.array([(abs(x - centerX) - dx/2)*slope for x in xpoints]) # elevation for each grid cell along the x
     #print(ypoints)
+
+    outPre = '../SingleLineOutput/'
     
     # Loop through all files by 'hour' and merge
-    firstFile = True
     incompleteRun = False
     for k in range(1,(runLen+1)):
         
@@ -165,79 +166,88 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
             wtd4500 = np.array([np.mean([i,j]) for i,j in zip(wtd4500a.flatten(),wtd4500b.flatten())])
             wtd4500.shape = wtd4500a.shape
 
-        if firstFile == True:
-            #storage
-            allSto = np.array(np.sum(stoDat))
-            nchanSto = np.array(np.sum(stoDat[:,:,np.arange(stoDat.shape[2]) != centerX]))
-            upSto = np.array(np.sum(stoDat[:,:,upHillXs]))
-            lowSto = np.array(np.sum(stoDat[:,:,lowHillXs]))
-            #soil moisture
-            low1m = np.array(np.mean(satDat1m[:,:,lowHillXs]))
-            up1m = np.array(np.mean(satDat1m[:,:,upHillXs]))
-            all1m = np.array(np.mean(satDat1m[:,:,np.arange(satDat.shape[2]) != centerX]))
-            low2m = np.array(np.mean(satDat2m[:,:,lowHillXs]))
-            up2m = np.array(np.mean(satDat2m[:,:,upHillXs]))
-            all2m = np.array(np.mean(satDat2m[:,:,np.arange(satDat.shape[2]) != centerX]))
-            #flow/channel pressure
-            topChanPress = np.array(pressDat[pressDat.shape[0]-1,pressDat.shape[1]-1,centerX])
-            #wtd
-            wtd500All = wtd500
-            wtd1500All = wtd1500
-            wtd2500All = wtd2500
-            wtd3500All = wtd3500
-            wtd4500All = wtd4500
-            firstFile=False
-        else:
-            allSto = np.append(allSto,np.sum(stoDat))
-            nchanSto = np.append(nchanSto,np.sum(stoDat[:,:,np.arange(stoDat.shape[2]) != centerX]))
-            upSto = np.append(upSto,np.sum(stoDat[:,:,upHillXs]))
-            lowSto = np.append(lowSto,np.sum(stoDat[:,:,lowHillXs]))
-            low1m = np.append(low1m,np.mean(satDat1m[:,:,lowHillXs]))
-            up1m = np.append(up1m,np.mean(satDat1m[:,:,upHillXs]))
-            all1m = np.append(all1m,np.mean(satDat1m[:,:,np.arange(satDat.shape[2]) != centerX]))
-            low2m = np.append(low2m,np.mean(satDat2m[:,:,lowHillXs]))
-            up2m = np.append(up2m,np.mean(satDat2m[:,:,upHillXs]))
-            all2m = np.append(all2m,np.mean(satDat2m[:,:,np.arange(satDat.shape[2]) != centerX]))
-            topChanPress = np.append(topChanPress,pressDat[pressDat.shape[0]-1,pressDat.shape[1]-1,centerX])
-            #wtd
-            wtd500All = np.concatenate((wtd500All,wtd500),axis=0)
-            wtd1500All = np.concatenate((wtd1500All,wtd1500))
-            wtd2500All = np.concatenate((wtd2500All,wtd2500))
-            wtd3500All = np.concatenate((wtd3500All,wtd3500))
-            wtd4500All = np.concatenate((wtd4500All,wtd4500))
+        # Write out data
+        #storage
+        allSto = np.sum(stoDat) dx * dy
+        with open(outPre + 'TotSto' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(allSto))
+            f.write('\n')
 
-    # do final multiplying at the end to avoid unnecearry multiplication
-    allSto = allSto * dx * dy
-    nchanSto = nchanSto * dx * dy
-    upSto = upSto*dx*dy
-    lowSto = lowSto*dx*dy
-    low1m = low1m*por
-    up1m = up1m*por
-    all1m = all1m*por
-    low2m = low2m*por
-    up2m = up2m*por
-    all2m = all2m*por
+        nchanSto = np.sum(stoDat[:,:,np.arange(stoDat.shape[2]) != centerX]) * dx * dy
+        with open(outPre + 'TotStowoChan' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(nchanSto))
+            f.write('\n')
 
-    # flow 
-    topChanPress[topChanPress < 0] = 0
-    q = [(p**(5/3))*(abs(slope)**(1/2))*dx/mannings for p in topChanPress]
+        upSto = np.sum(stoDat[:,:,upHillXs])*dx*dy
+        with open(outPre + 'UpSto' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(upSto))
+            f.write('\n')
 
-    # write out files
-    outPre = '../SingleLineOutput/'
-    np.savetxt(outPre + 'TotSto' + '_run' + str(rpars['n']) + '.csv',allSto,delimiter=',')
-    np.savetxt(outPre + 'TotStowoChan' + '_run' + str(rpars['n']) + '.csv',nchanSto,delimiter=',')
-    np.savetxt(outPre + 'SM_1m' + '_run' + str(rpars['n']) + '.csv',all1m,delimiter=',')
-    np.savetxt(outPre + 'SM_2m' + '_run' + str(rpars['n']) + '.csv',all2m,delimiter=',')
-    np.savetxt(outPre + 'LowerHillSM_1m' + '_run' + str(rpars['n']) + '.csv',up1m,delimiter=',')
-    np.savetxt(outPre + 'LowerHillSM_2m' + '_run' + str(rpars['n']) + '.csv',up2m,delimiter=',')
-    np.savetxt(outPre + 'UpperHillSM_1m' + '_run' + str(rpars['n']) + '.csv',low1m,delimiter=',')
-    np.savetxt(outPre + 'UpperHillSM_2m' + '_run' + str(rpars['n']) + '.csv',low2m,delimiter=',')
-    np.savetxt(outPre + 'Outflow' + '_run' + str(rpars['n']) + '.csv',q,delimiter=',')
-    np.savetxt(outPre + 'WTD500m' + '_run' + str(rpars['n']) + '.csv',wtd500All,delimiter=',')
-    np.savetxt(outPre + 'WTD1500m' + '_run' + str(rpars['n']) + '.csv',wtd1500All,delimiter=',')
-    np.savetxt(outPre + 'WTD2500m' + '_run' + str(rpars['n']) + '.csv',wtd2500All,delimiter=',')
-    np.savetxt(outPre + 'WTD3500m' + '_run' + str(rpars['n']) + '.csv',wtd3500All,delimiter=',')
-    np.savetxt(outPre + 'WTD4500m' + '_run' + str(rpars['n']) + '.csv',wtd4500All,delimiter=',')
+        lowSto = np.sum(stoDat[:,:,lowHillXs])*dx*dy
+        with open(outPre + 'LoSto' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(lowSto))
+            f.write('\n')
+
+        #soil moisture
+        low1m = np.mean(satDat1m[:,:,lowHillXs])*por
+        with open(outPre + 'LowerHillSM_1m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(low1m))
+            f.write('\n')
+
+        up1m = np.mean(satDat1m[:,:,upHillXs])*por
+        with open(outPre + 'UpperHillSM_1m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(up1m))
+            f.write('\n')
+
+        all1m = np.mean(satDat1m[:,:,np.arange(satDat.shape[2]) != centerX])*por
+        with open(outPre + 'SM_1m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(all1m))
+            f.write('\n')
+
+        low2m = np.array(np.mean(satDat2m[:,:,lowHillXs]))*por
+        with open(outPre + 'LowerHillSM_2m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(low2m))
+            f.write('\n')
+        
+        up2m = np.mean(satDat2m[:,:,upHillXs])*por
+        with open(outPre + 'UpperHillSM_2m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(up2m))
+            f.write('\n')
+
+        all2m = np.mean(satDat2m[:,:,np.arange(satDat.shape[2]) != centerX])*por
+        with open(outPre + 'SM_2m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(all2m))
+            f.write('\n')
+
+        #flow/channel pressure
+        topChanPress = pressDat[pressDat.shape[0]-1,pressDat.shape[1]-1,centerX]
+        if topChanPress < 0:
+            topChanPress == 0
+        q = (topChanPress**(5/3))*(abs(slope)**(1/2))*dx/mannings
+        with open(outPre + 'Outflow' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            f.write(str(q))
+            f.write('\n')
+        
+        # water table depth transects
+        with open(outPre + 'WTD500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            np.savetxt(f,wtd500,delimiter=',')
+            f.write('\n')
+
+        with open(outPre + 'WTD1500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            np.savetxt(f,wtd1500,delimiter=',')
+            f.write('\n')
+
+        with open(outPre + 'WTD2500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            np.savetxt(f,wtd2500,delimiter=',')
+            f.write('\n')
+
+        with open(outPre + 'WTD3500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            np.savetxt(f,wtd3500,delimiter=',')
+            f.write('\n')
+
+        with open(outPre + 'WTD4500m' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
+            np.savetxt(f,wtd4500,delimiter=',')
+            f.write('\n')
 
     # add clm processing
     # if needed...
@@ -290,7 +300,7 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
                     firstVar = False
                 else:
                     hourDF = pd.concat([hourDF,varDF],axis=1)
-                    
+
             # write out data
             if firstFile: # write out header
                 hourDF.to_csv(clmOutFile, sep=',',header=True,index=False)
