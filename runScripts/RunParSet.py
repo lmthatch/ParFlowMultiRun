@@ -127,7 +127,8 @@ def createRunDir(n): #(clmDir,currTestDir) input parameters ignored for now, ass
 
     # create run directory
     runDir = 'test' + str(n)
-    os.system('mkdir ' + runDir)
+    os.makedirs(runDir, exist_ok=True)
+    #os.system('mkdir ' + runDir)
 
     return runDir
 
