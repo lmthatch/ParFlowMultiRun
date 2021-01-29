@@ -168,7 +168,7 @@ def processDataTV(rpars): #,saveAllPFData,saveTotStoSL,saveRecCurve_Total, saveR
 
         # Write out data
         #storage
-        allSto = np.sum(stoDat) dx * dy
+        allSto = np.sum(stoDat) * dx * dy
         with open(outPre + 'TotSto' + '_run' + str(rpars['n']) + '.csv', 'a') as f:
             f.write(str(allSto))
             f.write('\n')
